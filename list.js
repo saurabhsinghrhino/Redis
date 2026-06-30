@@ -1,331 +1,421 @@
 // ======================================================
-// Import the Redis client
+// Redis Lists (list.js)
+// ======================================================
+//
+// A Redis List is an ordered collection of elements.
+//
+// Think of it like:
+//
+// [
+//   "A",
+//   "B",
+//   "C",
+//   "D"
+// ]
+//
+// Features:
+// ✔ Maintains insertion order
+// ✔ Allows duplicate values
+// ✔ Fast insertion/removal at both ends
+// ✔ Implemented as a Doubly Linked List internally
+//
+// Common Use Cases:
+// ✔ Chat Messages
+// ✔ Notifications
+// ✔ Recent Searches
+// ✔ Task Queue
+// ✔ Job Processing
+// ✔ Activity Logs
+//
 // ======================================================
 
-// This file exports an already connected Redis client.
-// (Usually client.js contains createClient() and client.connect())
-const client = require("./client.js");
-
-// ======================================================
-// Main Function
-// ======================================================
+const client = require("./client");
 
 async function init() {
-  console.log("========== REDIS STRING COMMANDS ==========\n");
+  console.log("\n========== REDIS LIST ==========\n");
+
+  // Always start with a clean list
+  await client.del("fruits");
 
   // ======================================================
-  // 1. SET
-  // ======================================================
-
-  /*
-      SET Command
-
-      Syntax:
-      SET key value
-
-      Purpose:
-      Stores a value inside Redis.
-
-      Example:
-      Key   -> "message1"
-      Value -> "I'm Good"
-
-      Redis stores everything as a string (unless using other data types).
-
-      Before:
-      message1 -> (doesn't exist)
-
-      After:
-      message1 -> "I'm Good"
-  */
-
-  // await client.set("message1", "I'm Good");
-
-  // ======================================================
-  // 2. GET
+  // 1. LPUSH
   // ======================================================
 
   /*
-      GET Command
+        LPUSH = Left Push
 
-      Syntax:
-      GET key
+        Inserts element at the beginning (left side).
 
-      Purpose:
-      Retrieves the value stored at a key.
+        Before:
 
-      Returns:
-      - Stored value
-      - null (if key doesn't exist)
-  */
+        []
 
-  // const message = await client.get("message1");
-  // console.log("Message:", message);
+        LPUSH Apple
 
-  // ======================================================
-  // 3. EXPIRE (TTL)
-  // ======================================================
+        After:
 
-  /*
-      EXPIRE Command
+        ["Apple"]
+    */
 
-      Syntax:
-      EXPIRE key seconds
+  await client.lPush("fruits", "Apple");
 
-      TTL = Time To Live
-
-      It tells Redis to automatically delete
-      the key after a certain number of seconds.
-
-      Example:
-
-      message1
-         |
-         |----> "I'm Good"
-
-      EXPIRE message1 10
-
-      After 10 seconds:
-
-      message1
-         |
-         |----> Deleted Automatically
-
-      Useful for:
-      ✔ OTP
-      ✔ Session Tokens
-      ✔ Cache
-      ✔ Temporary Data
-  */
-
-  // await client.expire("message1", 10);
-
-  // Check remaining TTL
-  // const ttl = await client.ttl("message1");
-  // console.log("Remaining TTL:", ttl);
+  console.log("After LPUSH Apple:", await client.lRange("fruits", 0, -1));
 
   // ======================================================
-  // 4. MSET (Multiple SET)
+  // 2. LPUSH Multiple Values
   // ======================================================
 
   /*
-      MSET = Multiple SET
+        LPUSH can insert multiple values.
 
-      Instead of writing:
+        Current:
 
-      SET bike:1 Deimos
-      SET bike:2 Ares
-      SET bike:3 Vanth
+        ["Apple"]
 
-      We can store all values in one command.
+        LPUSH Mango Banana Orange
 
-      Advantage:
-      ✔ Faster
-      ✔ Less Network Calls
-  */
+        Every new value is pushed to the LEFT.
 
-  /*
-      Database after MSET
+        Final:
 
-      bike:1 -> Deimos
-      bike:2 -> Ares
-      bike:3 -> Vanth
-  */
+        [
+          "Orange",
+          "Banana",
+          "Mango",
+          "Apple"
+        ]
+    */
 
-  // await client.mSet([
-  //   ["bike:1", "Deimos"],
-  //   ["bike:2", "Ares"],
-  //   ["bike:3", "Vanth"],
-  // ]);
+  await client.lPush("fruits", "Mango", "Banana", "Orange");
+
+  console.log("After Multiple LPUSH:", await client.lRange("fruits", 0, -1));
 
   // ======================================================
-  // 5. MGET (Multiple GET)
+  // 3. RPUSH
   // ======================================================
 
   /*
-      MGET = Multiple GET
+        RPUSH = Right Push
 
-      Fetches multiple values in a single request.
+        Adds element at the END of the list.
 
-      Returns:
-      [
-        "Deimos",
-        "Ares",
-        "Vanth"
-      ]
-  */
+        Current:
 
-  // const bikes = await client.mGet([
-  //   "bike:1",
-  //   "bike:2",
-  //   "bike:3",
-  // ]);
+        [
+          "Orange",
+          "Banana",
+          "Mango",
+          "Apple"
+        ]
 
-  // console.log("Bikes:", bikes);
+        RPUSH Grapes
 
-  // ======================================================
-  // 6. INCR
-  // ======================================================
+        Result:
 
-  /*
-      INCR = Increment by 1
+        [
+          "Orange",
+          "Banana",
+          "Mango",
+          "Apple",
+          "Grapes"
+        ]
+    */
 
-      Works ONLY on numeric string values.
+  await client.rPush("fruits", "Grapes");
 
-      Redis internally stores:
-
-      total_crashes -> "0"
-
-      INCR
-
-      total_crashes -> "1"
-
-      Useful for:
-      ✔ Website Visitors
-      ✔ Likes
-      ✔ Views
-      ✔ Counters
-      ✔ API Requests
-  */
-
-  // await client.set("total_crashes", 0);
-
-  // const increased = await client.incr("total_crashes");
-
-  // console.log("After INCR:", increased);
+  console.log("After RPUSH:", await client.lRange("fruits", 0, -1));
 
   // ======================================================
-  // 7. DECR
+  // 4. LRANGE
   // ======================================================
 
   /*
-      DECR = Decrement by 1
+        LRANGE
 
-      Before:
+        Returns elements between indexes.
 
-      total_crashes -> "10"
+        Syntax:
 
-      After DECR:
+        LRANGE key start stop
 
-      total_crashes -> "9"
-  */
+        Indexes:
 
-  // await client.set("total_crashes", 10);
+        0  1  2  3  4
+        O  B  M  A  G
 
-  // const decreased = await client.decr("total_crashes");
+        0  -> First Element
 
-  // console.log("After DECR:", decreased);
+        -1 -> Last Element
 
-  // ======================================================
-  // 8. INCRBY
-  // ======================================================
+        -2 -> Second Last
 
-  /*
-      INCRBY = Increment by any number
+        Examples:
 
-      Before:
+        LRANGE fruits 0 -1
+        => Entire List
 
-      total_crashes -> 1
+        LRANGE fruits 0 2
+        => First 3 Elements
+    */
 
-      INCRBY 10
+  const list = await client.lRange("fruits", 0, -1);
 
-      After:
-
-      total_crashes -> 11
-  */
-
-  // await client.set("total_crashes", 1);
-
-  // const incrBy = await client.incrBy("total_crashes", 10);
-
-  // console.log("After INCRBY:", incrBy);
+  console.log("Entire List:", list);
 
   // ======================================================
-  // 9. DECRBY
+  // 5. LLEN
   // ======================================================
 
   /*
-      DECRBY = Decrement by any number
+        LLEN
 
-      Before:
+        Returns total number of elements.
 
-      total_crashes -> 10
+        Example:
 
-      DECRBY 5
+        [
+          Apple
+          Mango
+          Banana
+        ]
 
-      After:
+        LLEN
 
-      total_crashes -> 5
-  */
+        Returns:
 
-  // await client.set("total_crashes", 10);
+        3
+    */
 
-  // const decrBy = await client.decrBy("total_crashes", 5);
+  const length = await client.lLen("fruits");
 
-  // console.log("After DECRBY:", decrBy);
-
-  // ======================================================
-  // 10. EXISTS
-  // ======================================================
-
-  /*
-      EXISTS
-
-      Checks whether a key exists.
-
-      Returns:
-      1 -> Exists
-      0 -> Doesn't Exist
-  */
-
-  // const exists = await client.exists("message1");
-  // console.log("Exists:", exists);
+  console.log("Length:", length);
 
   // ======================================================
-  // 11. DEL
+  // 6. LPOP
   // ======================================================
 
   /*
-      DEL
+        Removes first element.
 
-      Deletes a key permanently.
+        Current:
 
-      Before:
+        [
+          Orange,
+          Banana,
+          Mango,
+          Apple,
+          Grapes
+        ]
 
-      message1 -> "I'm Good"
+        LPOP
 
-      DEL message1
+        Removes:
 
-      After:
+        Orange
+    */
 
-      message1 -> null
-  */
+  const left = await client.lPop("fruits");
 
-  // await client.del("message1");
+  console.log("Removed Left:", left);
+
+  console.log(await client.lRange("fruits", 0, -1));
 
   // ======================================================
-  // 12. TYPE
+  // 7. RPOP
   // ======================================================
 
   /*
-      TYPE
+        Removes last element.
 
-      Tells which datatype a key stores.
+        Current:
 
-      Examples:
+        [
+          Banana,
+          Mango,
+          Apple,
+          Grapes
+        ]
 
-      string
-      list
-      set
-      hash
-      zset
-  */
+        RPOP
 
-  // const type = await client.type("bike:1");
-  // console.log("Type:", type);
+        Removes:
 
-  console.log("\n========== END ==========");
+        Grapes
+    */
+
+  const right = await client.rPop("fruits");
+
+  console.log("Removed Right:", right);
+
+  console.log(await client.lRange("fruits", 0, -1));
+
+  // ======================================================
+  // 8. LINDEX
+  // ======================================================
+
+  /*
+        Returns value at given index.
+
+        Example:
+
+        [
+          Banana,
+          Mango,
+          Apple
+        ]
+
+        LINDEX 1
+
+        Returns:
+
+        Mango
+    */
+
+  const second = await client.lIndex("fruits", 1);
+
+  console.log("Index 1:", second);
+
+  // ======================================================
+  // 9. LSET
+  // ======================================================
+
+  /*
+        Replace value at index.
+
+        Before:
+
+        [
+          Banana,
+          Mango,
+          Apple
+        ]
+
+        LSET index 1 Kiwi
+
+        After:
+
+        [
+          Banana,
+          Kiwi,
+          Apple
+        ]
+    */
+
+  await client.lSet("fruits", 1, "Kiwi");
+
+  console.log("After LSET:", await client.lRange("fruits", 0, -1));
+
+  // ======================================================
+  // 10. LREM
+  // ======================================================
+
+  /*
+        Remove matching values.
+
+        Syntax:
+
+        LREM key count value
+
+        count > 0
+
+        Removes from LEFT
+
+        count < 0
+
+        Removes from RIGHT
+
+        count = 0
+
+        Removes ALL occurrences
+    */
+
+  await client.rPush("fruits", "Apple");
+  await client.rPush("fruits", "Apple");
+
+  console.log("Before LREM:", await client.lRange("fruits", 0, -1));
+
+  await client.lRem("fruits", 0, "Apple");
+
+  console.log("After LREM:", await client.lRange("fruits", 0, -1));
+
+  // ======================================================
+  // 11. LTRIM
+  // ======================================================
+
+  /*
+        Keep only selected indexes.
+
+        Example:
+
+        Current:
+
+        [
+          A
+          B
+          C
+          D
+          E
+        ]
+
+        LTRIM 0 2
+
+        Result:
+
+        [
+          A
+          B
+          C
+        ]
+
+        Useful for:
+
+        ✔ Keep latest 100 logs
+        ✔ Keep latest notifications
+    */
+
+  await client.del("numbers");
+
+  await client.rPush("numbers", 1, 2, 3, 4, 5, 6, 7);
+
+  console.log("Numbers:", await client.lRange("numbers", 0, -1));
+
+  await client.lTrim("numbers", 0, 2);
+
+  console.log("After LTRIM:", await client.lRange("numbers", 0, -1));
+
+  // ======================================================
+  // 12. RPOPLPUSH
+  // ======================================================
+
+  /*
+        Moves last element from one list
+        to another list.
+
+        Source:
+
+        queue
+
+        Destination:
+
+        processing
+
+        Used in Job Queues.
+    */
+
+  await client.del("queue");
+  await client.del("processing");
+
+  await client.rPush("queue", "Job1", "Job2", "Job3");
+
+  const moved = await client.rPopLPush("queue", "processing");
+
+  console.log("Moved Job:", moved);
+
+  console.log("Queue:", await client.lRange("queue", 0, -1));
+
+  console.log("Processing:", await client.lRange("processing", 0, -1));
+
+  console.log("\n========== END ==========\n");
 }
 
-// Execute the program
 init();
